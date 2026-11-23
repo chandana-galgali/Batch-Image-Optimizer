@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="description" content="Private batch image optimization. Resize, compress and download images directly in your browser."/>
+<title>PixelBatch — Batch Image Optimizer</title>
+<meta name="theme-color" content="#153f35"/>
+<meta property="og:type" content="website"/>
+<meta property="og:title" content="PixelBatch — Batch Image Optimizer"/>
+<meta property="og:description" content="Resize, convert, and compress multiple images locally in your browser. No uploads required."/>
+<link rel="icon" href="favicon.svg" type="image/svg+xml"/>
+<link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+<header class="topbar"><a class="brand" href="#"><span class="mark">◫</span> PixelBatch <span class="brand-sub">/ image optimizer</span></a><a class="toplink" href="https://github.com/chandana-galgali/Batch-Image-Optimizer" target="_blank" rel="noopener noreferrer">View source ↗</a></header>
+<main>
+<section class="hero"><div class="eyebrow"><span class="dot"></span> LOCAL-FIRST IMAGE WORKFLOW</div><h1>Smaller images.<br/><em>Zero compromise.</em></h1><p>Resize and compress an entire batch in seconds. No uploads, no accounts, no complicated setup. Your images stay in your browser.</p><div class="pillrow"><span>✦ Private by design</span><span>↗ JPEG · PNG · WebP</span><span>✓ No signup</span></div></section>
+<section class="workspace" aria-label="Image optimization workspace">
+<div class="workspace-header"><div><span class="section-label">01 / YOUR IMAGES</span><h2>Drop your images here</h2></div><span class="muted">Local processing only</span></div>
+<div id="dropzone" class="dropzone" role="button" tabindex="0" aria-label="Choose images or drop them here"><div class="upload-icon">⇧</div><strong>Drag & drop images, or <span>browse files</span></strong><small>JPEG, PNG, WebP, GIF, BMP · Multiple files supported</small><input id="fileInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/bmp" multiple hidden/></div>
+<div class="controls"><div class="control"><label for="format">OUTPUT FORMAT</label><select id="format"><option value="image/webp">WebP (recommended)</option><option value="image/jpeg">JPEG</option><option value="image/png">PNG</option></select></div><div class="control"><label for="width">MAX WIDTH (PX)</label><input id="width" type="number" min="1" max="20000" value="1920"/></div><div class="control"><label for="height">MAX HEIGHT (PX)</label><input id="height" type="number" min="1" max="20000" value="1080"/></div><div class="control"><label for="quality">QUALITY <output id="qvalue">80%</output></label><input id="quality" type="range" min="1" max="100" value="80"/></div></div>
+<div class="actions"><div id="summary" aria-live="polite">Add images to get started.</div><div class="action-buttons"><button id="clear" class="secondary" disabled>Clear</button><button id="optimize" class="primary" disabled>Optimize images →</button><button id="download" class="primary" disabled>Download ZIP ↓</button></div></div>
+<div class="results" id="results" aria-live="polite"></div>
+</section>
+<section class="info"><div><span class="section-label">02 / WHY PIXELBATCH</span><h2>Built for the way<br/>you actually work.</h2></div><div class="info-grid"><article><div class="info-icon">⌑</div><h3>Your files stay yours</h3><p>Processing uses your browser's built-in image canvas. No file upload or image server.</p></article><article><div class="info-icon">⊞</div><h3>Batch, not one by one</h3><p>Drop multiple files, process in order, and download results as one ZIP archive.</p></article><article><div class="info-icon">↗</div><h3>Responsive output</h3><p>Set maximum dimensions while preserving aspect ratio. Files are never enlarged.</p></article></div></section>
+</main><footer><strong>PixelBatch</strong><span>Batch Image Optimizer · Local-first · Browser demo</span><span>For advanced workflows, use the Python CLI. · <a href="https://github.com/chandana-galgali/Batch-Image-Optimizer/blob/HEAD/LICENSE" target="_blank" rel="noopener noreferrer">MIT License</a></span></footer>
+<script src="app.js"></script>
+</body>
+</html>

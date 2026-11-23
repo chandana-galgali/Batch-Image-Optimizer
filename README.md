@@ -1,48 +1,83 @@
-## Batch-Image-Optimizer
-A powerful and simple command-line utility to optimize a folder of images. This tool proportionally resizes images to fit within a bounding box, compresses them, and saves them with descriptive filenames based on their final dimensions.
+# PixelBatch — Batch Image Optimizer
 
-# Features
-- **Simplified Workflow**: Just drop your images into the _images/input_ folder and run the script.
-- **Bounding Box Resizing**: Shrinks large images to fit within a maximum width AND maximum height, perfectly preserving the original aspect ratio without cropping.
-- **Descriptive Filenames**: Automatically renames output files to include their final dimensions (e.g., __photo_1280x720.jpeg__).
-- **Conflict Handling**: Prevents overwriting files by automatically adding a number to the filename if it already exists (e.g., __photo_1280x720_1.jpeg__).
-- **Quality Control**: Adjust the JPEG compression quality to balance file size and visual fidelity.
+**Optimize multiple images in seconds. Private, lightweight, and easy to use.**
 
-# Installation
-1. Clone the repository:
+[**Live Website**](https://chandana-galgali.github.io/Batch-Image-Optimizer/) · [**MIT License**](LICENSE)
+
+![PixelBatch browser app screenshot](docs/screenshot.png)
+
+PixelBatch is a batch image optimizer that works in your browser or from the command line. Resize, compress, and convert images without uploading them to a server.
+
+## Features
+
+- **Batch processing** — optimize multiple images together.
+- **Local and private** — images stay on your device.
+- **Flexible output** — export JPEG, PNG, or WebP.
+- **Smart resizing** — preserve aspect ratio without upscaling.
+- **Easy downloads** — download processed browser images in a ZIP.
+- **Python CLI** — automate optimization for local folders.
+
+## Use the web app
+
+Open the [live website](https://chandana-galgali.github.io/Batch-Image-Optimizer/) or launch [`web/index.html`](web/index.html) locally. Drop in images, choose your settings, click **Optimize images**, and download the ZIP.
+
+## Use the Python CLI
+
+Requires Python 3.10+.
+
 ```bash
-git clone https://github.com/chandana-galgali/Batch-Image-Optimizer.git
-cd Batch-Image-Optimizer
+python -m pip install -r requirements.txt
 ```
 
-2. Create the necessary folders:
-The script expects a specific folder structure. This command creates the _images_ folder and the _input_ sub-folder.
+Add your images to `images/input/`, then run:
+
 ```bash
-mkdir -p images/input
+python image_optimizer.py --max-width 1920 --max-height 1080 --quality 75
 ```
 
-3. Install dependencies:
-It's recommended to use a virtual environment.
-```bash
-# Create and activate a virtual environment (optional)
-python -m venv venv
-source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
+Optimized images are saved in `images/output/`.
 
-# Install the required library
-pip install -r requirements.txt
+To use custom directories and output format:
+
+```bash
+python image_optimizer.py --input ./photos --output ./optimized --format webp --max-width 1200 --max-height 1200 --quality 82
 ```
 
-# Usage
-The script is run from the command line. It automatically uses the _./images/input_ folder and saves results to _./images/output_, so you only need to provide the dimensions and quality.
+### CLI options
 
-**Basic Example**
-To process all images to fit within a 1920x1080 bounding box using the default 75% quality:
-```bash
-python image_optimizer.py --max-width 1920 --max-height 1080
+| Option | Default | Description |
+| --- | --- | --- |
+| `--input` | `images/input` | Input directory |
+| `--output` | `images/output` | Output directory |
+| `--max-width` | `1920` | Maximum width in pixels |
+| `--max-height` | `1080` | Maximum height in pixels |
+| `--quality` | `75` | JPEG/WebP quality (1–100) |
+| `--format` | `jpeg` | `jpeg`, `png`, or `webp` |
+
+## Project structure
+
+```text
+Batch-Image-Optimizer/
+├── web/                    # Browser app
+├── image_optimizer.py      # Python CLI
+├── images/                 # Local input and output folders
+├── tests/                  # Unit tests
+├── docs/                   # Screenshot and project notes
+├── .github/workflows/      # CI and GitHub Pages
+├── requirements.txt
+└── LICENSE
 ```
 
-**Advanced Example**
-To process all images to fit within a 1000x1000 bounding box and set the compression quality to a higher 85%:
+## Run tests
+
 ```bash
-python image_optimizer.py --max-width 1000 --max-height 1000 --quality 85
+python -m unittest discover -s tests -v
 ```
+
+## Notes
+
+Images are processed locally. The browser version converts animated images to a static frame, and exceptionally large batches may be limited by browser memory. The Python CLI is better suited to large folders or automation.
+
+## License
+
+Licensed under the [MIT License](LICENSE).

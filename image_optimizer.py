@@ -1,111 +1,129 @@
+#!/usr/bin/env python3
+"""Batch Image Optimizer — dependency-light CLI for local image processing."""
+from __future__ import annotations
+
 import argparse
-from PIL import Image
+import sys
+from dataclasses import dataclass
 from pathlib import Path
+from PIL import Image, ImageOps, UnidentifiedImageError
 
-SCRIPT_DIR = Path(__file__).parent
-INPUT_DIR = SCRIPT_DIR / 'images' / 'input'
-OUTPUT_DIR = SCRIPT_DIR / 'images' / 'output'
-DEFAULT_FORMAT = 'JPEG'
+ROOT = Path(__file__).resolve().parent
+SUPPORTED = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif", ".tif", ".tiff"}
+FORMATS = {"jpeg": ("JPEG", ".jpg"), "png": ("PNG", ".png"), "webp": ("WEBP", ".webp")}
 
-def optimize_image(source_path, max_width, max_height, quality):
-    """
-    Optimizes a single image by resizing it to fit a bounding box,
-    then determines a descriptive filename and saves it.
-    """
+
+@dataclass(frozen=True)
+class Result:
+    source: Path
+    destination: Path | None
+    original_bytes: int
+    output_bytes: int
+    error: str | None = None
+
+
+def unique_path(directory: Path, stem: str, extension: str) -> Path:
+    candidate = directory / f"{stem}{extension}"
+    index = 1
+    while candidate.exists():
+        candidate = directory / f"{stem}_{index}{extension}"
+        index += 1
+    return candidate
+
+
+def optimize_image(source: Path, output_dir: Path, max_width: int, max_height: int,
+                   quality: int = 75, output_format: str = "jpeg") -> Result:
+    """Resize without upscaling, respect EXIF rotation and avoid overwrites."""
+    original_bytes = source.stat().st_size
     try:
-        with Image.open(source_path) as img:
-            original_size = img.size
-            
-            img.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
-            final_size = img.size
-            
-            if final_size == original_size:
-                print(f"    - Image is already within bounds. No resize needed.")
+        with Image.open(source) as original:
+            # Normalize EXIF orientation before dimensions are calculated.
+            image = ImageOps.exif_transpose(original)
+            image.seek(0) if getattr(image, "n_frames", 1) > 1 else None
+            image.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
+            width, height = image.size
+            fmt, extension = FORMATS[output_format]
+            if fmt == "JPEG":
+                # Alpha cannot be encoded as JPEG: composite on white instead of dropping it.
+                if image.mode in ("RGBA", "LA") or (image.mode == "P" and "transparency" in image.info):
+                    rgba = image.convert("RGBA")
+                    background = Image.new("RGB", rgba.size, "white")
+                    background.paste(rgba, mask=rgba.getchannel("A"))
+                    image = background
+                else:
+                    image = image.convert("RGB")
+            elif fmt == "PNG":
+                image = image.convert("RGBA" if "A" in image.getbands() or "transparency" in image.info else "RGB")
             else:
-                 print(f"    - Resized from {original_size[0]}x{original_size[1]} to {final_size[0]}x{final_size[1]}px")
+                image = image.convert("RGBA" if "A" in image.getbands() or "transparency" in image.info else "RGB")
+            output_dir.mkdir(parents=True, exist_ok=True)
+            destination = unique_path(output_dir, f"{source.stem}_{width}x{height}", extension)
+            options = {"optimize": True}
+            if fmt != "PNG":
+                options["quality"] = quality
+            if fmt == "JPEG":
+                options["progressive"] = True
+            try:
+                image.save(destination, format=fmt, **options)
+            except Exception:
+                destination.unlink(missing_ok=True)
+                raise
+            return Result(source, destination, original_bytes, destination.stat().st_size)
+    except (OSError, ValueError, UnidentifiedImageError) as exc:
+        return Result(source, None, original_bytes, 0, str(exc))
 
-            base_filename = f"{source_path.stem}_{final_size[0]}x{final_size[1]}"
-            output_filename = f"{base_filename}.{DEFAULT_FORMAT.lower()}"
-            output_path = OUTPUT_DIR / output_filename
-            
-            counter = 1
-            while output_path.exists():
-                output_filename = f"{base_filename}_{counter}.{DEFAULT_FORMAT.lower()}"
-                output_path = OUTPUT_DIR / output_filename
-                counter += 1
-            
-            if counter > 1:
-                print(f"    - WARNING: File exists. Saving as '{output_path.name}' to avoid overwrite.")
 
-            if DEFAULT_FORMAT.lower() == 'jpeg' and img.mode in ('RGBA', 'P'):
-                img = img.convert('RGB')
-                print(f"    - Converted to RGB for JPEG compatibility")
+def positive_int(value: str) -> int:
+    number = int(value)
+    if number < 1:
+        raise argparse.ArgumentTypeError("must be a positive integer")
+    return number
 
-            print(f"    - Saving as '{output_path.name}' with quality {quality}%")
-            img.save(output_path, format=DEFAULT_FORMAT, quality=quality, optimize=True)
-            return True
-    except Exception as e:
-        print(f"    - ERROR: Could not process {source_path}. Reason: {e}")
-        return False
 
-def main():
-    """
-    Main function to parse arguments and process images.
-    """
-    parser = argparse.ArgumentParser(
-        description="Batch compress and resize images to fit within a bounding box. Looks for images in './images/input' and saves them to './images/output'."
-    )
-    parser.add_argument(
-        '--max-width',
-        required=True,
-        type=int,
-        help="The maximum width for the output images in pixels."
-    )
-    parser.add_argument(
-        '--max-height',
-        required=True,
-        type=int,
-        help="The maximum height for the output images in pixels."
-    )
-    parser.add_argument(
-        '--quality',
-        type=int,
-        default=75,
-        help="Compression quality for the output JPEG images (1-100). Default is 75."
-    )
-    args = parser.parse_args()
+def quality_int(value: str) -> int:
+    number = int(value)
+    if not 1 <= number <= 100:
+        raise argparse.ArgumentTypeError("must be between 1 and 100")
+    return number
 
-    if not INPUT_DIR.is_dir():
-        print(f"Error: Input directory '{INPUT_DIR}' not found. Please create it.")
-        return
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    
-    print("==========================================")
-    print("      STARTING BATCH IMAGE OPTIMIZER      ")
-    print("==========================================")
-    print(f"Input Directory: {INPUT_DIR}")
-    print(f"Output Directory: {OUTPUT_DIR}")
-    print(f"Bounding Box: {args.max_width}w x {args.max_height}h px")
-    print(f"Output Quality: {args.quality}%")
-    print("------------------------------------------")
 
-    processed_count = 0
-    error_count = 0
-    supported_extensions = ['.jpg', '.jpeg', '.png', '.bmp', '.gif']
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Resize and optimize images locally; no uploads.")
+    parser.add_argument("--input", type=Path, default=ROOT / "images/input", help="Input folder (default: images/input)")
+    parser.add_argument("--output", type=Path, default=ROOT / "images/output", help="Output folder (default: images/output)")
+    parser.add_argument("--max-width", type=positive_int, default=1920)
+    parser.add_argument("--max-height", type=positive_int, default=1080)
+    parser.add_argument("--quality", type=quality_int, default=75)
+    parser.add_argument("--format", choices=tuple(FORMATS), default="jpeg")
+    args = parser.parse_args(argv)
+    source_dir = args.input.expanduser().resolve()
+    dest_dir = args.output.expanduser().resolve()
+    if not source_dir.is_dir():
+        print(f"Input folder not found: {source_dir}", file=sys.stderr)
+        return 2
+    if source_dir == dest_dir:
+        print("Input and output folders must be different.", file=sys.stderr)
+        return 2
+    candidates = sorted(p for p in source_dir.iterdir() if p.is_file() and p.suffix.lower() in SUPPORTED)
+    if not candidates:
+        print(f"No supported images found in {source_dir}")
+        return 0
+    successes, failures, before, after = 0, 0, 0, 0
+    for source in candidates:
+        result = optimize_image(source, dest_dir, args.max_width, args.max_height, args.quality, args.format)
+        if result.error:
+            failures += 1
+            print(f"FAIL {source.name}: {result.error}")
+        else:
+            successes += 1
+            before += result.original_bytes
+            after += result.output_bytes
+            delta = (1 - result.output_bytes / result.original_bytes) * 100 if result.original_bytes else 0
+            print(f" OK  {source.name} -> {result.destination.name} ({delta:+.1f}% smaller)")
+    savings = (1 - after / before) * 100 if before else 0
+    print(f"\nFinished: {successes} succeeded, {failures} failed | total size change: {savings:+.1f}% smaller")
+    return 1 if failures else 0
 
-    for item in INPUT_DIR.iterdir():
-        if item.is_file() and item.suffix.lower() in supported_extensions:
-            print(f"Processing '{item.name}'...")
-            
-            if optimize_image(item, args.max_width, args.max_height, args.quality):
-                processed_count += 1
-            else:
-                error_count += 1
-    
-    print("------------------------------------------")
-    print("               PROCESS COMPLETE               ")
-    print(f"Successfully processed: {processed_count} images")
-    print("==========================================")
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
