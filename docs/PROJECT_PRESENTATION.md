@@ -1,23 +1,22 @@
-# Portfolio presentation
+# Project overview
 
-**Title:** PixelBatch — A Privacy-First Batch Image Optimizer
+**PixelBatch: a privacy-first batch image optimizer.** Resize and compress entire image batches directly in the browser, or automate the same workflow with a Python CLI.
 
-**One-line pitch:** Resize and compress entire image batches directly in your browser, or automate the same workflow with a Python CLI.
+**Problem:** Optimizing images by hand is repetitive, and most web compressors require uploading your files to a server.
 
-**Problem:** Optimizing images manually is repetitive, and web compressors often require uploading files.
+**Solution:** One tool with two interfaces: a browser-based drag-and-drop workspace and a scriptable command-line utility. Both process files locally.
 
-**Solution:** A lightweight two-interface tool: a browser-first drag-and-drop workspace and a repeatable command-line utility.
+**Engineering highlights:**
+- Aspect-ratio-preserving bounding-box resize, with no upscaling
+- EXIF orientation handling in the CLI
+- Alpha-safe conversion when exporting transparent images to JPEG
+- Non-destructive naming when output files would collide
+- Per-file error isolation, so one bad image doesn't stop the batch
+- Native Canvas encoding and an in-browser ZIP export
+- Unit tests and CI on every push
 
-**Engineering highlights:** Aspect-ratio-preserving bounding boxes; EXIF orientation handling in CLI; alpha-safe JPEG conversion; non-destructive conflict naming; batch error isolation; native Canvas conversion and ZIP export in-browser; unit tests and automated CI.
+**Pipeline:** file selection → decode → resize → encode → local export (download or ZIP).
 
-**Suggested portfolio cards:**
-1. Screenshot of the browser workspace after processing 3 sample images.
-2. Two-column "Browser vs CLI" section emphasizing a different usage situation for each.
-3. Mini architecture: file selection → decode → resize → encode → local export.
-4. A short screen recording of import → adjust → compress → ZIP download.
+**Design decision:** PixelBatch ships as a static website rather than a browser extension. A static site gives a live, zero-maintenance demo, while an extension would add permissions and distribution overhead without solving a clear additional need.
 
-**Suggested repository description:** Privacy-first batch image optimizer with a responsive browser UI and Python CLI. Resize, convert, compress, and export locally.
-
-**Suggested GitHub topics:** `image-optimization`, `python`, `pillow`, `javascript`, `webp`, `batch-processing`, `privacy-first`.
-
-**Release strategy:** Static site first, not an extension. A live URL and screenshot provide a useful demo with almost zero maintenance. An extension would add permissions and distribution complexity without solving a clear additional need.
+**GitHub topics:** `image-optimization`, `python`, `pillow`, `javascript`, `webp`, `batch-processing`, `privacy-first`.
